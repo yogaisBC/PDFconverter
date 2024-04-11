@@ -18,6 +18,13 @@ from pdf2image.exceptions import (
     PDFSyntaxError,
 )
 
+from pydantic import BaseModel
+
+class BoundingLines(BaseModel):
+    x1: int
+    y1: int
+    x2: int
+    y2: int
 
 def main():
 
@@ -108,19 +115,6 @@ def detect_and_draw_lines(image, apertureSize, coloured_image, i):
 
     output_image(coloured_image, f"writable_aperture_{apertureSize}_page{i}.png")
 
-def skeletonize(img):
-    skel = np.zeros(img.shape, dtype=np.uint8)
-    kernel = cv.getStructuringElement(cv.MORPH_RECT, (3, 3))
-    while True:
-        eroded = cv.erode(img, kernel)
-        temp = cv.dilate(eroded, kernel)
-        temp = cv.subtract(img, temp)
-        skel = cv.bitwise_or(skel, temp)
-        img = eroded.copy()
-        if cv.countNonZero(img) == 0:
-            break
-    return skel
-
 def bounding_box(image, coloured_image, i):
 
     temp = coloured_image.copy()
@@ -129,14 +123,7 @@ def bounding_box(image, coloured_image, i):
 
     output_image(blurred, f"blurred_{i}.png")
 
-    skelstart = time.process_time()
-    print("Skeletonizing")
-    skeletonized = skeletonize(blurred)
-
-    skelstop = time.process_time()
-    print(f"Skeletonizing time: {skelstop - skelstart} seconds")
-
-    _, threshold = cv.threshold(skeletonized, 200, 255, cv.THRESH_BINARY_INV)
+    _, threshold = cv.threshold(blurred, 200, 255, cv.THRESH_BINARY_INV)
 
     contours, _ = cv.findContours(threshold, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 
